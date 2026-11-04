@@ -1,0 +1,29 @@
+# Template file for 'python3-pywal16'
+pkgname=python3-pywal16
+version=3.8.15
+revision=1
+build_style=python3-pep517
+hostmakedepends="python3-setuptools python3-wheel python3-build python3-installer"
+depends="python3 ImageMagick"
+short_desc="Generate and change colourschemes on the fly - 16 colour fork"
+maintainer="S <s@omfm.ru>"
+license="MIT"
+homepage="https://github.com/eylles/pywal16"
+distfiles="${PYPI_SITE}/p/pywal16/pywal16-${version}.tar.gz"
+checksum=aa01949f21e9a2a3d72305f19c5e366df81da9806ad3321da294d68b48d6ddd0
+
+# Void ships "pywal", which is the original project. This is the fork omvoid
+# uses: sixteen colours instead of eight, and template filters like saturate()
+# that omvoid's own templates are written against. They install the same
+# command, so only one of them can be present.
+provides="pywal-${version}_1"
+replaces="pywal>=0"
+
+post_install() {
+	# Upstream's setup puts the manual page in /usr/man, which Void forbids.
+	if [ -d "${DESTDIR}/usr/man" ]; then
+		vmkdir usr/share
+		mv "${DESTDIR}/usr/man" "${DESTDIR}/usr/share/man"
+	fi
+	vlicense LICENSE.md
+}

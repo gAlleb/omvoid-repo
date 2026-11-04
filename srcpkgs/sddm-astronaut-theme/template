@@ -1,0 +1,19 @@
+# Template file for 'sddm-astronaut-theme'
+pkgname=sddm-astronaut-theme
+version=0.0.20260905
+revision=1
+_commit=292c87b770ff9eab1903dd2c6ddff466faf87fb0
+depends="sddm qt6-svg qt6-virtualkeyboard qt6-multimedia"
+short_desc="Astronaut theme for the SDDM display manager"
+maintainer="S <s@omfm.ru>"
+license="GPL-3.0-or-later"
+homepage="https://github.com/keyitdev/sddm-astronaut-theme"
+distfiles="https://github.com/keyitdev/sddm-astronaut-theme/archive/${_commit}.tar.gz"
+checksum=be42fffb903caffc74d49cf5239e3672ecd546e95d58d9f5e821205aedf1b926
+wrksrc="sddm-astronaut-theme-${_commit}"
+
+do_install() {
+	vmkdir usr/share/sddm/themes/sddm-astronaut-theme
+	vcopy "*" usr/share/sddm/themes/sddm-astronaut-theme
+	vlicense LICENSE
+}

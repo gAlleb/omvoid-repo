@@ -1,0 +1,19 @@
+# Template file for 'nerd-fonts-caskaydia-ttf'
+pkgname=nerd-fonts-caskaydia-ttf
+version=3.4.0
+revision=1
+create_wrksrc=yes
+short_desc="CaskaydiaMono Nerd Font - Cascadia Mono patched with extra glyphs"
+maintainer="S <s@omfm.ru>"
+license="OFL-1.1"
+homepage="https://www.nerdfonts.com/"
+distfiles="https://github.com/ryanoasis/nerd-fonts/releases/download/v${version}/CascadiaMono.tar.xz"
+checksum=7c22db8c8460ef62abffbb6d5c7b212507de0798a4a762fa2a005a8bc4c90fc6
+
+font_dirs="/usr/share/fonts/nerd-fonts"
+
+do_install() {
+	vmkdir usr/share/fonts/nerd-fonts
+	vcopy "*.ttf" usr/share/fonts/nerd-fonts
+	vlicense LICENSE
+}

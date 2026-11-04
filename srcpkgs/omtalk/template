@@ -1,0 +1,23 @@
+# Template file for 'omtalk'
+pkgname=omtalk
+version=0.1.11
+revision=1
+build_style=cargo
+make_build_args="-p omtalk"
+# The default feature set excludes the tests that need a running XMPP server.
+make_check_args="-p omtalk"
+hostmakedepends="pkg-config"
+makedepends="opus-devel sqlite-devel"
+short_desc="Terminal XMPP client with OMEMO encryption"
+maintainer="Stefan <s@omfm.ru>"
+license="GPL-3.0-or-later"
+homepage="https://github.com/gAlleb/omtalk"
+changelog="https://github.com/gAlleb/omtalk/releases"
+distfiles="https://github.com/gAlleb/omtalk/archive/refs/tags/v${version}.tar.gz"
+checksum=c4f7b7243e2266c9e663d6200ce7e293cee58453523525a9c160d10eb94086ff
+
+do_install() {
+	vbin target/${RUST_TARGET}/release/omtalk
+	vdoc README.md
+	vdoc README.ru.md
+}

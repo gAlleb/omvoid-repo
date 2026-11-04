@@ -1,0 +1,37 @@
+# Template file for 'mutt-wizard'
+#
+# Built from master, not from the 3.3.1 tag. The tag is far behind: its Makefile
+# installs four files into share/mutt-wizard, while master installs all eleven --
+# the seven *-temp templates among them, which is what "mw -a" builds an account
+# from. A package without them can serve accounts that already exist and cannot
+# add one.
+#
+# PREFIX=/usr, though upstream's "make install" defaults to /usr/local and writes
+# that path into the user's own configuration: ~/.config/mutt/muttrc gets
+# "source <prefix>/share/mutt-wizard/mutt-wizard.muttrc", and so does every
+# account file. Packaging into /usr/local to match was tried and is impossible --
+# xbps-src refuses it outright (common/hooks/pre-pkg/99-pkglint.sh forbids
+# usr/local, var/run and usr/etc, with no per-package exception).
+#
+# So a machine that used to have the manual install needs those lines rewritten
+# once. The Makefile substitutes /usr/local for $(PREFIX) in mw, mutt-wizard.muttrc,
+# mailcap and the man page, so everything the package generates from then on points
+# at /usr on its own.
+_commit=b4a28b2548e94c167bb74fcb5e8c44c34d2be842
+pkgname=mutt-wizard
+version=3.3.1.20260726
+revision=1
+build_style=gnu-makefile
+make_install_args="PREFIX=/usr"
+depends="neomutt isync msmtp pass notmuch"
+short_desc="Automatic email setup for neomutt"
+maintainer="S <s@omfm.ru>"
+license="GPL-3.0-only"
+homepage="https://github.com/LukeSmithxyz/mutt-wizard"
+distfiles="https://github.com/LukeSmithxyz/mutt-wizard/archive/${_commit}.tar.gz"
+checksum=bf3a36d21dcd53d01ace0a47fb094318a1dccd98ef9974c0294107d13b4845a7
+wrksrc="mutt-wizard-${_commit}"
+
+post_install() {
+	vlicense LICENSE
+}

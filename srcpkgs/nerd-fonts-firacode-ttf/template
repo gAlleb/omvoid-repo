@@ -1,0 +1,19 @@
+# Template file for 'nerd-fonts-firacode-ttf'
+pkgname=nerd-fonts-firacode-ttf
+version=3.4.0
+revision=1
+create_wrksrc=yes
+short_desc="FiraCode Nerd Font - Fira Code patched with extra glyphs"
+maintainer="S <s@omfm.ru>"
+license="OFL-1.1"
+homepage="https://www.nerdfonts.com/"
+distfiles="https://github.com/ryanoasis/nerd-fonts/releases/download/v${version}/FiraCode.tar.xz"
+checksum=d83fb093e0e05a531cd6f19886a6ceb884a4fa5ea3b53cf099fc1f30c5b3e47d
+
+font_dirs="/usr/share/fonts/nerd-fonts"
+
+do_install() {
+	vmkdir usr/share/fonts/nerd-fonts
+	vcopy "*.ttf" usr/share/fonts/nerd-fonts
+	vlicense LICENSE
+}

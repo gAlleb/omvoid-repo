@@ -1,0 +1,23 @@
+# Template file for 'WhiteSur-icon-theme'
+pkgname=WhiteSur-icon-theme
+version=2025.02.10
+revision=1
+_tag=v2025-02-10
+hostmakedepends="bash which util-linux git gtk+3"
+short_desc="macOS Big Sur-like icon theme"
+maintainer="S <s@omfm.ru>"
+license="GPL-3.0-or-later"
+homepage="https://github.com/vinceliuice/WhiteSur-icon-theme"
+distfiles="https://github.com/vinceliuice/WhiteSur-icon-theme/archive/refs/tags/${_tag}.tar.gz"
+checksum=b94a3db27bd746c267b882a957f863e3ef62eebec7d21c4436b90913597386a6
+wrksrc="WhiteSur-icon-theme-${_tag#v}"
+
+do_install() {
+	vmkdir usr/share/icons
+	# The colour variants omvoid's themes name in their icons.theme files.
+	local t
+	for t in default grey purple red orange; do
+		TERM=linux ./install.sh -d "${DESTDIR}/usr/share/icons" -t "$t"
+	done
+	vlicense COPYING
+}

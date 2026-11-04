@@ -1,0 +1,23 @@
+# Template file for 'mihomo'
+pkgname=mihomo
+version=1.19.30
+revision=1
+archs="x86_64"
+create_wrksrc=yes
+short_desc="Rule-based tunnel in Go"
+maintainer="S <s@omfm.ru>"
+license="GPL-3.0-or-later"
+homepage="https://github.com/MetaCubeX/mihomo"
+# The "compatible" build, not one of the microarchitecture variants: it runs on
+# any x86_64, which is what a distribution image needs.
+_asset="mihomo-linux-amd64-compatible-v${version}.gz"
+distfiles="https://github.com/MetaCubeX/mihomo/releases/download/v${version}/${_asset}"
+checksum=db214c7a2517e63c150d123178d16d102e03a241ccdae4e5e07ffbe9cf56c6f9
+skip_extraction="${_asset}"
+
+do_install() {
+	# A bare gzipped binary, not an archive -- unpacked by hand because
+	# xbps-src's extractor expects something with files inside.
+	gzip -dc "${XBPS_SRCDISTDIR}/${pkgname}-${version}/${_asset}" > mihomo
+	vbin mihomo
+}

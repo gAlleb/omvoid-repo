@@ -1,0 +1,61 @@
+# Template file for 'Waybar'
+#
+# Void's own template (0.15.0_4), pointed at a commit of master instead of the
+# release. Waybar 0.15.0 has no modules for mango's IPC: mangowc 0.17 removed
+# the dwl-ipc protocol its dwl/window module needs, and with it in the config
+# the whole bar segfaults at start (Alexays/Waybar#5235). master has
+# mango/workspaces, mango/window, mango/layout, mango/language and
+# mango/keymode. The version sorts above Void's 0.15.0, so xbps takes this one;
+# drop the template once Void ships a release that has them (0.16.0).
+pkgname=Waybar
+_commit=323e66f51644d0562be54af3c21f368a4d61d321
+version=0.15.0.20261002
+revision=1
+wrksrc="Waybar-${_commit}"
+build_style=meson
+# mango is the point of the package. cava, gps and wwan are new since 0.15.0 and
+# "auto": left alone, meson tries to fetch libcava as a subproject, and the
+# build has no network.
+configure_args="-Dlibudev=enabled -Dman-pages=enabled
+ -Dsystemd=disabled -Drfkill=enabled -Dmango=true
+ -Dcava=disabled -Dgps=disabled -Dwwan=disabled -Dtests=disabled
+ $(vopt_feature libnl libnl)
+ $(vopt_feature pulseaudio pulseaudio)
+ $(vopt_feature dbusmenugtk dbusmenu-gtk)
+ $(vopt_feature mpd mpd)
+ $(vopt_feature sndio sndio)
+ $(vopt_feature jack jack)
+ $(vopt_feature pipewire wireplumber)"
+hostmakedepends="cmake pkg-config glib-devel wayland-devel scdoc
+ $(vopt_if dbusmenugtk gobject-introspection)"
+# libxkbcommon-devel: master requires xkbregistry, 0.15.0 did not.
+makedepends="libevdev-devel libinput-devel wayland-devel gtkmm-devel spdlog eudev-libudev-devel
+ gtk-layer-shell-devel jsoncpp-devel libglib-devel libsigc++-devel fmt-devel chrono-date-devel
+ playerctl-devel upower-devel libxkbcommon-devel
+ $(vopt_if pipewire 'wireplumber-devel pipewire-devel')
+ $(vopt_if libnl libnl3-devel)
+ $(vopt_if pulseaudio pulseaudio-devel)
+ $(vopt_if dbusmenugtk libdbusmenu-gtk3-devel)
+ $(vopt_if mpd libmpdclient-devel)
+ $(vopt_if sndio sndio-devel)
+ $(vopt_if jack jack-devel)"
+short_desc="Polybar-like Wayland Bar for Sway and Wlroots based compositors"
+maintainer="S <s@omfm.ru>"
+license="MIT"
+homepage="https://github.com/Alexays/Waybar"
+changelog="https://github.com/Alexays/Waybar/commits/master"
+distfiles="https://github.com/Alexays/Waybar/archive/${_commit}.tar.gz"
+checksum=3f3b48e809e641b875a4395ed4d21c0876e3f40e95eb9f039cc6ae0f96da3a5d
+conf_files="/etc/xdg/waybar/config.jsonc /etc/xdg/waybar/style.css"
+
+build_options="libnl pulseaudio dbusmenugtk mpd sndio jack pipewire"
+build_options_default="libnl pulseaudio dbusmenugtk mpd sndio jack pipewire"
+
+desc_option_libnl="Enable libnl support for network related features"
+desc_option_dbusmenugtk="Enable support for tray"
+desc_option_mpd="Enable support for MPD"
+desc_option_pipewire="Enable support for pipewire related features"
+
+post_install() {
+	vlicense LICENSE
+}

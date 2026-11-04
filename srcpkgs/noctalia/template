@@ -1,0 +1,33 @@
+# Taken from upstream, not written here. Refresh it with:
+#     omvoid-pkg-fetch noctalia
+# The people who maintain it follow the releases; we follow them.
+#
+# Template file for 'noctalia'
+pkgname=noctalia
+version=5.0.0beta10
+revision=1
+build_style=meson
+configure_args="-Dtests=disabled"
+hostmakedepends="pkg-config"
+makedepends="basu-devel cairo-devel fontconfig-devel freetype-devel harfbuzz-devel
+	jemalloc-devel json-c++ libcurl-devel libepoxy-devel libglvnd-devel libmd4c-devel
+	libqalculate-devel librsvg-devel libsodium-devel libwebp-devel libxkbcommon-devel
+	libxml2-devel libsecret-devel libjxl-devel MesaLib-devel pam-devel pango-devel
+	libsndfile-devel pipewire-devel polkit-devel sdbus-c++-devel stb tomlplusplus-devel
+	libical-devel wayland-devel wayland-protocols wireplumber-devel"
+short_desc="Noctalia desktop shell"
+maintainer="Haris <plavpxl@proton.me>"
+license="MIT"
+homepage="https://noctalia.dev"
+changelog="https://github.com/noctalia-dev/noctalia/releases"
+distfiles="https://github.com/noctalia-dev/noctalia/archive/v${version/beta/-beta.}.tar.gz"
+checksum=6386f9b56bf01e6515a3df9e4662a80a8e20ec87815cdca362af9b9c3c429be2
+
+do_patch() {
+	local upver="${version/beta/-beta.}"
+	vsed -i "0,/version: '[^']*'/s//version: '${upver}'/" meson.build
+}
+
+post_install() {
+	vlicense LICENSE
+}

@@ -1,0 +1,25 @@
+# Template file for 'wal-telegram'
+pkgname=wal-telegram
+version=0.0.20260905
+revision=1
+_commit=538ef13fc89d6e3b9c656822b22b80120ea3307d
+depends="python3 ImageMagick"
+short_desc="Generate a Telegram Desktop theme from the current pywal colours"
+maintainer="S <s@omfm.ru>"
+license="MIT"
+homepage="https://github.com/galleb/wal-telegram"
+distfiles="https://github.com/galleb/wal-telegram/archive/${_commit}.tar.gz"
+checksum=21a0f817548f3305a40f8b454878f0ea79b79364303bde04c530ab2d3ff92883
+wrksrc="wal-telegram-${_commit}"
+
+do_install() {
+	# Its Makefile writes straight into /usr, with no DESTDIR, so the three
+	# files it installs are placed here instead.
+	vinstall wal-telegram 755 usr/share/wal-telegram
+	vinstall colors.wt-constants 644 usr/share/wal-telegram
+	vmkdir usr/bin
+	printf '#!/bin/sh\nexec /usr/share/wal-telegram/wal-telegram "$@"\n' \
+		> "${DESTDIR}/usr/bin/wal-telegram"
+	chmod 755 "${DESTDIR}/usr/bin/wal-telegram"
+	vlicense LICENSE
+}

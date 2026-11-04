@@ -1,0 +1,22 @@
+# Template file for 'sf-pro-display'
+pkgname=sf-pro-display
+version=1.0.0
+revision=1
+create_wrksrc=yes
+short_desc="SF Pro Display and SF Pro Text typefaces"
+maintainer="S <s@omfm.ru>"
+# Apple's own licence, not a free one: redistribution is limited to Apple
+# platforms. Packaged here because omvoid's interface is designed around it;
+# xbps-src refuses such templates without XBPS_ALLOW_RESTRICTED.
+license="custom:Apple"
+homepage="https://developer.apple.com/fonts/"
+distfiles="https://github.com/gAlleb/SFProDisplay/releases/download/v${version}/SFProDisplay.tar.xz"
+checksum=714f5fbd0608580b8ac0a54a033e67473b7dde23e0f34d8e633461ea0676d688
+restricted=yes
+
+font_dirs="/usr/share/fonts/sf-pro"
+
+do_install() {
+	vmkdir usr/share/fonts/sf-pro
+	vcopy "*.otf" usr/share/fonts/sf-pro
+}

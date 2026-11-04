@@ -1,0 +1,95 @@
+name: Build omtalk
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - srcpkgs/omtalk/**
+      - .github/workflows/build.yml
+      - .github/scripts/build-omtalk.sh
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-omtalk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: omtalk / x86_64-glibc
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    container:
+      image: ghcr.io/void-linux/void-glibc-full:latest
+      options: --platform linux/amd64 --privileged
+      volumes:
+        - /dev:/dev
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Prepare Void container
+        run: |
+          xbps-install -Syu xbps
+          xbps-install -yu
+          xbps-install -y bash git sudo ca-certificates
+          useradd -m -G xbuilder -s /bin/bash builder
+
+      - name: Check out package templates
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Check out Void build tools
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: void-linux/void-packages
+          ref: 61ddd648754ac14afd917c9fbb65f7900e128df0
+          path: void-packages
+          persist-credentials: false
+
+      - name: Prepare package build
+        run: |
+          cp -a srcpkgs/omtalk void-packages/srcpkgs/
+          printf '%s\n' 'XBPS_CHROOT_CMD=uchroot' > void-packages/etc/conf
+          chown -R builder:builder void-packages
+          mkdir -p artifacts
+
+      - name: Build and test omtalk
+        run: |
+          set -o pipefail
+          sudo -H -u builder bash .github/scripts/build-omtalk.sh 2>&1 | tee artifacts/build.log
+
+      - name: Collect package
+        run: |
+          shopt -s nullglob
+          packages=(void-packages/hostdir/binpkgs/omtalk-*.x86_64.xbps)
+          if ((${#packages[@]} != 1)); then
+            echo "Expected one omtalk package, found ${#packages[@]}" >&2
+            exit 1
+          fi
+          cp "${packages[0]}" artifacts/
+          cd artifacts
+          sha256sum ./*.xbps > SHA256SUMS
+
+      - name: Upload package
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: omtalk-x86_64-glibc-${{ github.sha }}
+          path: |
+            artifacts/*.xbps
+            artifacts/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
+
+      - name: Upload build log
+        if: ${{ always() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: omtalk-build-log-${{ github.sha }}
+          path: artifacts/build.log
+          if-no-files-found: warn
+          retention-days: 14

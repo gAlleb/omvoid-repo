@@ -1,0 +1,22 @@
+# Template file for 'netbird'
+pkgname=netbird
+version=0.80.0
+revision=1
+archs="x86_64"
+create_wrksrc=yes
+short_desc="NetBird client: WireGuard mesh network with SSO and access control"
+maintainer="S <s@omfm.ru>"
+license="BSD-3-Clause"
+homepage="https://netbird.io"
+changelog="https://github.com/netbirdio/netbird/releases"
+# The released binary, not a build from source: NetBird is not in Void repos,
+# and this is the same file the upstream installer puts on every Linux machine.
+distfiles="https://github.com/netbirdio/netbird/releases/download/v${version}/netbird_${version}_linux_amd64.tar.gz"
+checksum=47ffaba4fc3929f31795bd6c5232d6c29744d3169e2c93e6d9c84624f0ef6405
+
+do_install() {
+	vbin netbird
+	vlicense LICENSE
+	# Shipped in /etc/sv, not enabled -- the same as Void's own tailscale.
+	vsv netbird
+}

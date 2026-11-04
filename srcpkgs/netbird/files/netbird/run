@@ -1,0 +1,11 @@
+#!/bin/sh
+
+[ -r conf ] && . ./conf
+
+exec 2>&1
+# "service run" is the daemon in the foreground: runit supervises it, nothing
+# forks. Logs go to stdout, where vsv's log service picks them up.
+exec /usr/bin/netbird service run \
+	--log-level "${LOG_LEVEL:-info}" \
+	--log-file console \
+	"$@"

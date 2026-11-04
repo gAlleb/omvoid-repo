@@ -1,0 +1,22 @@
+# Template file for 'WhiteSur-kde'
+pkgname=WhiteSur-kde
+version=2024.11.18
+revision=1
+_tag=2024-11-18
+short_desc="macOS Big Sur-like Kvantum themes for Qt applications"
+maintainer="S <s@omfm.ru>"
+license="GPL-3.0-or-later"
+homepage="https://github.com/vinceliuice/WhiteSur-kde"
+distfiles="https://github.com/vinceliuice/WhiteSur-kde/archive/refs/tags/${_tag}.tar.gz"
+checksum=8ab21920e8df0647431b7f23ace7f9a7a51b320263f4364ac286bae1a359e91a
+wrksrc="WhiteSur-kde-${_tag}"
+
+do_install() {
+	# Only the Kvantum part. The rest of this repository is Plasma decorations,
+	# colour schemes and latte-dock layouts -- none of which omvoid runs, and
+	# upstream's installer would scatter them across a KDE that is not there.
+	vmkdir usr/share/Kvantum
+	vcopy "Kvantum/WhiteSur" usr/share/Kvantum
+	vcopy "Kvantum/WhiteSur-opaque" usr/share/Kvantum
+	vlicense LICENSE
+}

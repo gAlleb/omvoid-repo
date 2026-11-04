@@ -1,0 +1,77 @@
+# Template file for 'WhiteSur-gtk-theme'
+pkgname=WhiteSur-gtk-theme
+version=2026.08.08
+revision=2
+# Upstream tags releases by date, and xbps will not take dashes in a version.
+_tag=2026-08-08
+hostmakedepends="bash which util-linux git sassc glib-devel gtk+3"
+short_desc="macOS Big Sur-like theme for GTK 3 and GTK 4"
+maintainer="S <s@omfm.ru>"
+license="GPL-3.0-or-later"
+homepage="https://github.com/vinceliuice/WhiteSur-gtk-theme"
+distfiles="https://github.com/vinceliuice/WhiteSur-gtk-theme/archive/refs/tags/${_tag}.tar.gz"
+checksum=6397235ce2c6ac4b96691f73bb6b9090c94c4cd4a105c2fdbcaa3a9680fefeab
+wrksrc="WhiteSur-gtk-theme-${_tag}"
+
+do_install() {
+	# TERM matters: the installer calls setterm, which fails when TERM is unset
+	# or "dumb", and it runs under "set -Eeo pipefail" with its own stderr sent
+	# to a file it deletes on exit -- so that failure leaves no trace at all.
+	# The same edit install/desktop/theme.sh makes: the installer offers to
+	# patch the running GNOME Shell, which does not exist in a build root and
+	# has nothing to do with a package of theme files.
+	sed -i '/shell_base/{n;s/^[[:blank:]]*install_shelly/ # &/;s/^ # #/ #/}' \
+		libs/lib-install.sh
+
+	# Stop it hiding its own errors. lib-core.sh does
+	#   exec 2> "${WHITESUR_TMP_DIR}/error_log.txt"
+	# and deletes that directory when it exits, so a failure here shows up as a
+	# bare exit code and nothing else -- which cost an afternoon once already.
+	sed -i 's|exec 2> "${WHITESUR_TMP_DIR}/error_log.txt"|:|' libs/lib-core.sh
+
+	# SUDO_BIN="$(which sudo)" is unconditional, and under "set -Eeo pipefail" a
+	# missing sudo ends the script. There is no sudo in a build root and no need
+	# for one -- the build already runs as root.
+	sed -i 's|^SUDO_BIN="$(which sudo)"|SUDO_BIN=""|' libs/lib-core.sh
+
+	vmkdir usr/share/themes
+	# TERM matters: the installer calls setterm, which fails when TERM is unset
+	# or "dumb", and it runs under "set -Eeo pipefail" with its own stderr sent
+	# to a file it deletes on exit -- so that failure leaves no trace at all.
+	TERM=linux bash ./install.sh -d "${DESTDIR}/usr/share/themes"
+
+	# The libadwaita variant, carried separately.
+	#
+	# "install.sh -l" produces something different from the theme above: loose
+	# CSS plus asset directories, instead of everything packed into a
+	# gtk.gresource. GTK4 applications read that from ~/.config/gtk-4.0, and it
+	# is the copy whose @define-color lines omvoid's palette overrides -- so
+	# without it the colours have nothing to attach to.
+	#
+	# It writes into $HOME, which a package has none of, so it is given one and
+	# the result is stored where the install step can copy it from.
+	local fakehome="${wrksrc}/.fakehome"
+	mkdir -p "$fakehome"
+	HOME="$fakehome" TERM=linux bash ./install.sh -d "${DESTDIR}/usr/share/themes" -l
+	HOME="$fakehome" TERM=linux bash ./install.sh -d "${DESTDIR}/usr/share/themes" -l -c light
+	if [ -d "$fakehome/.config/gtk-4.0" ]; then
+		vmkdir usr/share/WhiteSur-gtk-theme
+		cp -a "$fakehome/.config/gtk-4.0" \
+			"${DESTDIR}/usr/share/WhiteSur-gtk-theme/"
+
+		# gtk.css and gtk-dark.css are links the installer writes with an
+		# absolute path -- $HOME/.config/gtk-4.0/gtk-Light.css, and $HOME here
+		# is the throwaway directory above. A path into the build root must not
+		# leave it: packaged as they stand, they reached the machine pointing
+		# at a /builddir that does not exist there, GTK4 read nothing, and the
+		# palette sat in omvoid.css with nobody to import it.
+		#
+		# Dropped rather than repointed. Which stylesheet is the active one is
+		# the machine's business, not the package's; install/desktop/theme.sh
+		# makes both links after copying this directory into place.
+		rm -f "${DESTDIR}/usr/share/WhiteSur-gtk-theme/gtk-4.0/gtk.css" \
+			"${DESTDIR}/usr/share/WhiteSur-gtk-theme/gtk-4.0/gtk-dark.css"
+	fi
+
+	vlicense COPYING
+}
