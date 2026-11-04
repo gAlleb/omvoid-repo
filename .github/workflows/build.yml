@@ -8,8 +8,6 @@ on:
       - .github/workflows/build.yml
       - .github/scripts/**
       - .github/tests/**
-  schedule:
-    - cron: '17 */6 * * *'
   workflow_dispatch:
     inputs:
       packages:
