@@ -7,6 +7,7 @@ on:
       - srcpkgs/omtalk/**
       - .github/workflows/build.yml
       - .github/scripts/build-omtalk.sh
+      - .github/scripts/publish-omtalk.sh
   workflow_dispatch:
 
 permissions:
@@ -14,7 +15,7 @@ permissions:
 
 concurrency:
   group: build-omtalk-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -31,6 +32,7 @@ jobs:
         shell: bash
     steps:
       - name: Prepare Void container
+        shell: sh
         run: |
           xbps-install -Syu xbps
           xbps-install -yu
@@ -93,3 +95,50 @@ jobs:
           path: artifacts/build.log
           if-no-files-found: warn
           retention-days: 14
+
+  publish:
+    name: Sign and publish / x86_64-glibc
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    concurrency:
+      group: repository-x86_64-glibc
+      cancel-in-progress: false
+    container:
+      image: ghcr.io/void-linux/void-glibc-full:latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Prepare signing tools
+        shell: sh
+        run: |
+          xbps-install -Syu xbps
+          xbps-install -yu
+          xbps-install -y bash git ca-certificates openssl libarchive python3
+
+      - name: Check out publication script
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Download tested package
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: omtalk-x86_64-glibc-${{ github.sha }}
+          path: artifacts
+
+      - name: Check out current binary snapshot
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: repository-x86_64-glibc
+          path: binary-repository
+          fetch-depth: 1
+
+      - name: Sign and replace binary snapshot
+        env:
+          OMVOID_REPO_KEY: ${{ secrets.OMVOID_REPO_KEY }}
+        run: bash .github/scripts/publish-omtalk.sh binary-repository artifacts
