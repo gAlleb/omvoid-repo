@@ -1,0 +1,5 @@
+{
+  "repository": "gAlleb/omtalk",
+  "tag_prefix": "v",
+  "cargo_manifest": "crates/tui/Cargo.toml"
+}

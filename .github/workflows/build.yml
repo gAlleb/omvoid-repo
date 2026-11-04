@@ -1,25 +1,80 @@
-name: Build omtalk
+name: Build packages
 
 on:
   push:
     branches: [main]
     paths:
-      - srcpkgs/omtalk/**
+      - srcpkgs/**
       - .github/workflows/build.yml
-      - .github/scripts/build-omtalk.sh
-      - .github/scripts/publish-omtalk.sh
+      - .github/scripts/**
+      - .github/tests/**
+  schedule:
+    - cron: '17 */6 * * *'
   workflow_dispatch:
+    inputs:
+      packages:
+        description: 'Packages separated by spaces, or all'
+        default: omtalk
+        type: string
+      check_updates:
+        description: 'Check configured upstream tags before building'
+        default: false
+        type: boolean
 
 permissions:
   contents: read
 
 concurrency:
-  group: build-omtalk-${{ github.ref }}
+  group: packages-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
+  select:
+    name: Select packages and check upstream tags
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    outputs:
+      packages: ${{ steps.select.outputs.packages }}
+      source: ${{ steps.select.outputs.source }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 1
+
+      - name: Check CI scripts
+        run: python3 -B -m unittest discover -s .github/tests -v
+
+      - name: Check upstream tags
+        id: update
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || inputs.check_updates)
+        run: |
+          python3 .github/scripts/update-sources.py
+          if ! git diff --quiet -- srcpkgs; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add srcpkgs
+            git commit -m "Update source templates"
+            git push origin HEAD:refs/heads/main
+          fi
+
+      - name: Select packages
+        id: select
+        env:
+          REQUESTED_PACKAGES: ${{ inputs.packages }}
+          UPDATED_PACKAGES: ${{ steps.update.outputs.updated }}
+        run: python3 .github/scripts/select-packages.py
+
   build:
-    name: omtalk / x86_64-glibc
+    name: ${{ matrix.package }} / x86_64-glibc
+    needs: select
+    if: needs.select.outputs.packages != '[]'
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        package: ${{ fromJSON(needs.select.outputs.packages) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     container:
@@ -42,6 +97,7 @@ jobs:
       - name: Check out package templates
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
+          ref: ${{ needs.select.outputs.source }}
           persist-credentials: false
 
       - name: Check out Void build tools
@@ -54,35 +110,31 @@ jobs:
 
       - name: Prepare package build
         run: |
-          cp -a srcpkgs/omtalk void-packages/srcpkgs/
-          printf '%s\n' 'XBPS_CHROOT_CMD=uchroot' > void-packages/etc/conf
+          cp -a srcpkgs/. void-packages/srcpkgs/
+          printf '%s\n' 'XBPS_CHROOT_CMD=uchroot' 'XBPS_ALLOW_RESTRICTED=yes' > void-packages/etc/conf
           chown -R builder:builder void-packages
           mkdir -p artifacts
 
-      - name: Build and test omtalk
+      - name: Build and test package
+        env:
+          PACKAGE: ${{ matrix.package }}
         run: |
           set -o pipefail
-          sudo -H -u builder bash .github/scripts/build-omtalk.sh 2>&1 | tee artifacts/build.log
+          sudo -H -u builder bash .github/scripts/build-package.sh "$PACKAGE" 2>&1 | tee artifacts/build.log
 
       - name: Collect package
-        run: |
-          shopt -s nullglob
-          packages=(void-packages/hostdir/binpkgs/omtalk-*.x86_64.xbps)
-          if ((${#packages[@]} != 1)); then
-            echo "Expected one omtalk package, found ${#packages[@]}" >&2
-            exit 1
-          fi
-          cp "${packages[0]}" artifacts/
-          cd artifacts
-          sha256sum ./*.xbps > SHA256SUMS
+        env:
+          PACKAGE: ${{ matrix.package }}
+        run: bash .github/scripts/collect-package.sh "$PACKAGE" artifacts
 
       - name: Upload package
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
-          name: omtalk-x86_64-glibc-${{ github.sha }}
+          name: package-${{ matrix.package }}-${{ github.run_id }}
           path: |
             artifacts/*.xbps
             artifacts/SHA256SUMS
+            artifacts/PACKAGE
           if-no-files-found: error
           retention-days: 14
           compression-level: 0
@@ -91,14 +143,14 @@ jobs:
         if: ${{ always() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
-          name: omtalk-build-log-${{ github.sha }}
+          name: build-log-${{ matrix.package }}-${{ github.run_id }}
           path: artifacts/build.log
           if-no-files-found: warn
           retention-days: 14
 
   publish:
     name: Sign and publish / x86_64-glibc
-    needs: build
+    needs: [select, build]
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -123,12 +175,13 @@ jobs:
       - name: Check out publication script
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
+          ref: ${{ needs.select.outputs.source }}
           persist-credentials: false
 
-      - name: Download tested package
+      - name: Download tested packages
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
-          name: omtalk-x86_64-glibc-${{ github.sha }}
+          pattern: package-*-${{ github.run_id }}
           path: artifacts
 
       - name: Check out current binary snapshot
@@ -141,15 +194,16 @@ jobs:
       - name: Sign and replace binary snapshot
         env:
           OMVOID_REPO_KEY: ${{ secrets.OMVOID_REPO_KEY }}
+          EXPECTED_PACKAGES: ${{ needs.select.outputs.packages }}
         run: |
           set -o pipefail
-          bash .github/scripts/publish-omtalk.sh binary-repository artifacts 2>&1 | tee publication.log
+          bash .github/scripts/publish-packages.sh binary-repository artifacts 2>&1 | tee publication.log
 
       - name: Upload publication log
         if: ${{ always() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
-          name: omtalk-publication-log-${{ github.sha }}
+          name: publication-log-${{ github.run_id }}
           path: publication.log
           if-no-files-found: warn
           retention-days: 14
