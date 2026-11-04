@@ -118,7 +118,7 @@ jobs:
         run: |
           xbps-install -Syu xbps
           xbps-install -yu
-          xbps-install -y bash git ca-certificates openssl libarchive python3
+          xbps-install -y bash git ca-certificates openssl bsdtar python3
 
       - name: Check out publication script
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -141,4 +141,15 @@ jobs:
       - name: Sign and replace binary snapshot
         env:
           OMVOID_REPO_KEY: ${{ secrets.OMVOID_REPO_KEY }}
-        run: bash .github/scripts/publish-omtalk.sh binary-repository artifacts
+        run: |
+          set -o pipefail
+          bash .github/scripts/publish-omtalk.sh binary-repository artifacts 2>&1 | tee publication.log
+
+      - name: Upload publication log
+        if: ${{ always() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: omtalk-publication-log-${{ github.sha }}
+          path: publication.log
+          if-no-files-found: warn
+          retention-days: 14
