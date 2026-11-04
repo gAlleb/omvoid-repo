@@ -6,7 +6,7 @@ build_style=cargo
 make_build_args="-p omtalk"
 # The default feature set excludes the tests that need a running XMPP server.
 make_check_args="-p omtalk"
-hostmakedepends="pkg-config"
+hostmakedepends="cmake pkg-config"
 makedepends="opus-devel sqlite-devel"
 short_desc="Terminal XMPP client with OMEMO encryption"
 maintainer="Stefan <s@omfm.ru>"
