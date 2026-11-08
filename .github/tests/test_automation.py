@@ -128,11 +128,16 @@ class Selection(unittest.TestCase):
         self.commit()
         self.assertEqual(selector.changed_packages(before, self.available), ['Waybar'])
 
-    def test_ci_change_smoke_build_and_new_branch(self):
+    def test_ci_changes_do_not_select_packages(self):
         Path('.github').mkdir()
         Path('.github/script.py').write_text('pass')
         self.commit()
-        self.assertEqual(selector.changed_packages(self.base, self.available), ['omtalk', 'wal-telegram'])
+        self.assertEqual(selector.changed_packages(self.base, self.available), [])
+        Path('srcpkgs/Waybar/template').write_text('version=2\n')
+        self.commit()
+        self.assertEqual(selector.changed_packages(self.base, self.available), ['Waybar'])
+
+    def test_new_branch_builds_all_packages(self):
         self.assertEqual(selector.changed_packages('0' * 40, self.available), sorted(self.available))
 
     def test_manual_selection_validated(self):

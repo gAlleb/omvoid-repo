@@ -26,9 +26,6 @@ def changed_packages(before, available):
             return sorted(available)
     files = subprocess.check_output(["git", "diff", "--name-only", "--no-renames", "-z", before, "HEAD"], text=True).split('\0')
     selected = {parts[1] for name in files if len(parts := name.split('/')) >= 3 and parts[0] == "srcpkgs" and parts[1] in available}
-    # Exercise both matrix collection and signing after changes to the pipeline itself.
-    if any(name.startswith(".github/") for name in files):
-        selected.update({"omtalk", "wal-telegram"} & available)
     return sorted(selected)
 
 
@@ -72,6 +69,6 @@ if __name__ == "__main__":
     event = json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text())
     packages = select(os.environ["GITHUB_EVENT_NAME"], event, os.environ.get("REQUESTED_PACKAGES", ""), available_packages(), json.loads(os.environ.get("UPDATED_PACKAGES") or "[]"))
     source = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
-    print("Selected packages:", ", ".join(packages) or "none; configured packages are already published")
+    print("Selected packages:", ", ".join(packages) or "none")
     with open(os.environ["GITHUB_OUTPUT"], "a") as stream:
         stream.write(f"packages={json.dumps(packages)}\nsource={source}\n")
