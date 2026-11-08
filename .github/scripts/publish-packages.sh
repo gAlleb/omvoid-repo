@@ -16,18 +16,24 @@ fail() {
 [[ -z $(git -C "$repo" status --porcelain) ]] || fail 'Binary checkout is not clean'
 expected=$(git -C "$repo" rev-parse HEAD)
 # Every successful matrix entry must supply exactly one named artifact.
-python3 - "$artifacts" <<'PY'
+# download-artifact extracts a single match directly into the destination.
+manifests=("$artifacts"/*/PACKAGE)
+if [[ -f "$artifacts/PACKAGE" ]]; then
+  ((${#manifests[@]} == 0)) || fail 'Mixed single and multiple artifact layouts'
+  manifests=("$artifacts/PACKAGE")
+fi
+python3 - "${manifests[@]}" <<'PY'
 import json, os, pathlib, re, sys
 expected = json.loads(os.environ['EXPECTED_PACKAGES'])
-names = [p.read_text().strip() for p in pathlib.Path(sys.argv[1]).glob('*/PACKAGE')]
+names = [p.read_text().strip() for p in map(pathlib.Path, sys.argv[1:])]
 if (not names or len(names) != len(set(names)) or sorted(names) != sorted(expected)
         or not all(re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9+_.-]*', name) for name in names)):
-    sys.exit('Artifacts do not match the selected packages')
+    sys.exit(f'Package mismatch: expected {expected}, found {names}')
 PY
 packages=()
 pkgvers=()
 names=()
-for manifest in "$artifacts"/*/PACKAGE; do
+for manifest in "${manifests[@]}"; do
   directory=$(dirname "$manifest")
   name=$(cat "$manifest")
   candidates=("$directory"/*.xbps)
