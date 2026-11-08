@@ -1,0 +1,21 @@
+# Template file for 'botui'
+pkgname=botui
+version=0.1.0
+revision=1
+build_style=cargo
+make_build_args="-p botui"
+make_check_args="--workspace"
+hostmakedepends="cmake"
+depends="ca-certificates djvulibre poppler poppler-glib python3-gobject xdg-utils"
+short_desc="Terminal ebook reader for local libraries, BookOrbit and OPDS"
+maintainer="Stefan <s@omfm.ru>"
+license="GPL-3.0-or-later"
+homepage="https://github.com/gAlleb/botui"
+changelog="https://github.com/gAlleb/botui/releases"
+distfiles="https://github.com/gAlleb/botui/archive/refs/tags/v${version}.tar.gz"
+checksum=aab0736714bab3d79b494a9af7d283477f5ded6b5bdb405421498288ace8eb55
+
+do_install() {
+	vbin target/${RUST_TARGET}/release/botui
+	vsconf config.example.toml
+}

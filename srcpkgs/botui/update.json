@@ -1,0 +1,5 @@
+{
+  "repository": "gAlleb/botui",
+  "tag_prefix": "v",
+  "cargo_manifest": "crates/app/Cargo.toml"
+}
