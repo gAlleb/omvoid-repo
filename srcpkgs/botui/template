@@ -1,6 +1,6 @@
 # Template file for 'botui'
 pkgname=botui
-version=0.1.1
+version=0.1.2
 revision=1
 build_style=cargo
 make_build_args="-p botui"
@@ -12,8 +12,8 @@ maintainer="Stefan <s@omfm.ru>"
 license="GPL-3.0-or-later"
 homepage="https://github.com/gAlleb/botui"
 changelog="https://github.com/gAlleb/botui/releases"
-distfiles="https://github.com/gAlleb/botui/archive/refs/tags/v${version}.tar.gz"
-checksum=437f7c43b9852c3135ae51b15c934c81aa24b5333979439766180575c3d8c651
+distfiles="https://codeload.github.com/gAlleb/botui/tar.gz/refs/tags/v${version}>${pkgname}-${version}.tar.gz"
+checksum=74f0abcef5eff26fd21490d73e251edf89283537b34870cc761317485c8e0924
 
 do_install() {
 	vbin target/${RUST_TARGET}/release/botui

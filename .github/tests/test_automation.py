@@ -1,3 +1,4 @@
+import hashlib
 import importlib.util
 import io
 import os
@@ -6,6 +7,7 @@ import subprocess
 import tarfile
 import tempfile
 import unittest
+from urllib.error import HTTPError
 from unittest.mock import patch
 
 SCRIPTS = Path(__file__).resolve().parents[1] / 'scripts'
@@ -45,6 +47,7 @@ class Tags(unittest.TestCase):
                 updated = template.read_text()
                 self.assertIn('version=0.1.11\nrevision=1\n', updated)
                 self.assertIn('checksum=' + 'b' * 64, updated)
+                self.assertIn('distfiles="https://codeload.github.com/gAlleb/omtalk/tar.gz/refs/tags/v${version}>${pkgname}-${version}.tar.gz"', updated)
                 self.assertIn('hostmakedepends="cmake"', updated)
                 self.assertFalse(updater.update(template, self.tags('v0.1.11'), RULE))
                 self.assertFalse(updater.update(template, self.tags('v0.1.8'), RULE))
@@ -78,6 +81,22 @@ class Tags(unittest.TestCase):
                 tar.addfile(member, io.BytesIO(data))
         result.seek(0)
         return result
+
+    def test_archive_recovers_from_503(self):
+        archive = self.archive('0.2.0')
+        expected = hashlib.sha256(archive.getvalue()).hexdigest()
+        with patch('urllib.request.urlopen', side_effect=[HTTPError('url', 503, 'busy', {}, None), archive]) as fetch, patch('time.sleep') as sleep:
+            self.assertEqual(updater.source_checksum('0.2.0', 'omtalk', RULE), expected)
+        self.assertEqual(fetch.call_count, 2)
+        sleep.assert_called_once_with(2)
+
+    def test_archive_stops_on_persistent_or_permanent_failure(self):
+        for status, attempts in [(503, 4), (404, 1)]:
+            with self.subTest(status=status), patch('urllib.request.urlopen', side_effect=HTTPError('url', status, 'error', {}, None)) as fetch, patch('time.sleep') as sleep:
+                with self.assertRaises(HTTPError):
+                    updater.open_source_archive('url')
+                self.assertEqual(fetch.call_count, attempts)
+                self.assertEqual(sleep.call_count, attempts - 1)
 
     def test_source_version_matches_tag(self):
         updater.validate_archive(self.archive('0.2.0'), '0.2.0', 'omtalk', RULE)
