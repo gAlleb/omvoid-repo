@@ -1,6 +1,6 @@
 # Template file for 'omtalk'
 pkgname=omtalk
-version=0.1.12
+version=0.1.13
 revision=1
 build_style=cargo
 make_build_args="-p omtalk"
@@ -14,7 +14,7 @@ license="GPL-3.0-or-later"
 homepage="https://github.com/gAlleb/omtalk"
 changelog="https://github.com/gAlleb/omtalk/releases"
 distfiles="https://codeload.github.com/gAlleb/omtalk/tar.gz/refs/tags/v${version}>${pkgname}-${version}.tar.gz"
-checksum=776c4aa98509354f29c4d108b72820a05afc03ff48e8fb527722e2d3d5afec06
+checksum=c360abe96500dd12ec568ca5af8f577003ca0ffb4087cf48ec79c7cced94fa40
 
 do_install() {
 	vbin target/${RUST_TARGET}/release/omtalk
