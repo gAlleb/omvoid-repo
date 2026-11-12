@@ -1,0 +1,49 @@
+Navigation tests must not read a user config in a clean package build.
+Pass settings explicitly, preserving the normal application initialization.
+
+diff --git a/crates/app/src/picker.rs b/crates/app/src/picker.rs
+index 9108cc0..f20ad88 100644
+--- a/crates/app/src/picker.rs
++++ b/crates/app/src/picker.rs
+@@ -87,6 +87,14 @@ impl Picker {
+ 
+     fn open(dir: PathBuf, source: Option<crate::cache::Source>) -> io::Result<Self> {
+         let settings = crate::settings::Settings::load()?;
++        Self::open_with_settings(dir, source, settings)
++    }
++
++    fn open_with_settings(
++        dir: PathBuf,
++        source: Option<crate::cache::Source>,
++        settings: crate::settings::Settings,
++    ) -> io::Result<Self> {
+         let mut picker = Self {
+             search: None,
+             source,
+diff --git a/crates/app/src/picker/navigation_tests.rs b/crates/app/src/picker/navigation_tests.rs
+index 4a33d40..3a8fd03 100644
+--- a/crates/app/src/picker/navigation_tests.rs
++++ b/crates/app/src/picker/navigation_tests.rs
+@@ -7,7 +7,10 @@ fn back_visits_parents_and_preserves_selection_and_scroll_before_leaving_the_roo
+     for name in ["A", "B", "C", "C/Child"] {
+         fs::create_dir_all(root.join(name)).unwrap();
+     }
+-    let mut picker = Picker::new(root.into()).unwrap();
++    // Navigation does not depend on the user's config or first-run initialization.
++    let mut picker =
++        Picker::open_with_settings(root.into(), None, crate::settings::Settings::default())
++            .unwrap();
+     picker.list = ListState::default().with_selected(Some(2)).with_offset(1);
+     picker.load(&root.join("C")).unwrap();
+     picker.load(&root.join("C/Child")).unwrap();
+@@ -30,7 +33,9 @@ fn returning_from_a_local_shelf_restores_the_folder_even_if_its_order_changed()
+     let temp = tempfile::tempdir().unwrap();
+     let root = temp.path();
+     fs::create_dir(root.join("B")).unwrap();
+-    let mut picker = Picker::new(root.into()).unwrap();
++    let mut picker =
++        Picker::open_with_settings(root.into(), None, crate::settings::Settings::default())
++            .unwrap();
+     picker.browse(LocalView::Recent).unwrap();
+     fs::create_dir(root.join("A")).unwrap();
+     assert!(!picker.back().unwrap());
