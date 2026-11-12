@@ -15,6 +15,13 @@ changelog="https://github.com/gAlleb/botui/releases"
 distfiles="https://codeload.github.com/gAlleb/botui/tar.gz/refs/tags/v${version}>${pkgname}-${version}.tar.gz"
 checksum=5b4801e1950c73d4730cd85068721924d51e44263138ee345c157d922940b5ba
 
+post_extract() {
+	# The navigation-test fix is already upstream starting with 0.1.9.
+	if [ "$version" = "0.1.8" ]; then
+		patch -Np1 < "${FILESDIR}/isolated-navigation-tests.patch"
+	fi
+}
+
 do_install() {
 	vbin target/${RUST_TARGET}/release/botui
 	vsconf config.example.toml
