@@ -1,6 +1,6 @@
 # Template file for 'botui'
 pkgname=botui
-version=0.1.10
+version=0.1.11
 revision=1
 build_style=cargo
 make_build_args="-p botui"
@@ -13,7 +13,7 @@ license="GPL-3.0-or-later"
 homepage="https://github.com/gAlleb/botui"
 changelog="https://github.com/gAlleb/botui/releases"
 distfiles="https://codeload.github.com/gAlleb/botui/tar.gz/refs/tags/v${version}>${pkgname}-${version}.tar.gz"
-checksum=f28d06af5f5d6ced81bd1d1d382a28d484d57c4ca865bc807dcacaef8228cf68
+checksum=b56e737aac6f1839390ede63ad4f4205bae9c57c8020dac8fe5c23a5409cc3d1
 
 post_extract() {
 	# The navigation-test fix is already upstream starting with 0.1.9.
