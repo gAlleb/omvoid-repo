@@ -1,12 +1,12 @@
 # Template file for 'botui'
 pkgname=botui
 version=0.1.26
-revision=1
+revision=2
 build_style=cargo
 make_build_args="-p botui"
 make_check_args="--workspace"
 hostmakedepends="cmake python3"
-depends="ca-certificates djvulibre poppler poppler-glib python3-gobject xdg-utils"
+depends="ca-certificates djvulibre gtk+3 poppler poppler-glib python3-gobject xdg-utils"
 short_desc="Terminal ebook reader for local libraries, BookOrbit and OPDS"
 maintainer="Stefan <s@omfm.ru>"
 license="GPL-3.0-or-later"
